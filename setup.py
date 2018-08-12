@@ -10,5 +10,5 @@ setup(
     install_requires=['numpy'],
     url='https://github.com/Microsoft/accbpg',
     author='Lin Xiao',
-    author_email='lin.xiao@microsoft.com'
+    author_email='lin.xiao@gmail.com'
 )

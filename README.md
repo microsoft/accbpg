@@ -2,16 +2,16 @@
 
 Accelerated first-order algorithms for solving relatively-smooth convex optimization problems of the form
 
-    minimize { f(x) + Psi(x) | x in C }
+    minimize { f(x) + P(x) | x in C }
 
 with a reference function h(x), where
 
 * h(x) is convex and essentially smooth on C
 * f(x) is convex and differentiable, and L-smooth relative to h(x), that is, f(x)-L*h(x) is convex
-* Psi(x) is convex and closed (lower semi-continuous)
+* P(x) is convex and closed (lower semi-continuous)
 * C is a closed convex set
 
-### Implemented algorithms in [HRX2018]
+### Implemented algorithms in [HRX2018](https://arxiv.org/abs/1808.03045)
 
 * BPG_LS (Bregman proximal gradient) method with line search
 * ABPG (Accelerated BPG) method
@@ -19,11 +19,9 @@ with a reference function h(x), where
 * ABPG-gain (ABPG with gain adaption)
 * ABDA (Accelerated Bregman dual averaging) method
 
-[HRX2018] Filip Hanzely, Peter Richtarik, and Lin Xiao, [Accelerated Bregman proximal gradient methods for relatively-smooth convex optimization](http://arXiv), arXiv:1808.xxxxx, August 2018.
-
 ## Installation
 
-Clone from GitHub. Or install from PyPI:
+Clone or fork from GitHub. Or install from PyPI:
 
     pip install accbpg
 
@@ -46,7 +44,7 @@ compare the two methods by visualization
     Fmin = min(F1.min(), F2.min())
     plt.semilogy(range(len(F1)), F1-Fmin, range(len(F2)), F2-Fmin)
 
-## Examples in [HRX2018]
+## Examples in [HRX2018](https://arxiv.org/abs/1808.03045)
 
 **D-optimal experiment design**
     
