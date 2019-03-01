@@ -389,6 +389,26 @@ class ShannonEntropySimplex(ShannonEntropy):
         return x / sum(x)
    
 
+class SumOf2nd4thPowers(LegendreFunction):
+    """
+    h(x) = (1/2)||x||_2^2 + (M/4)||x||_2^4
+    """       
+    def __init__(self, M):
+        self.M = M
+    
+    def __call__(self, x):
+        normsq = np.dot(x, x)
+        return 0.5 * normsq + (self.M / 4) * normsq**2
+
+    def gradient(self, x):
+        normsq = np.dot(x, x)         
+        return (1 + self.M * normsq) * x
+
+    def divergence(self, x, y):
+        assert x.shape == y.shape, "Bregman div: x and y not same shape."
+        return self.__call__(x) - (self.__call__(y) 
+                                   + np.dot(self.gradient(y), x-y))
+
 class SquaredL2Norm(LegendreFunction):
     """
     h(x) = (1/2)||x||_2^2
@@ -413,23 +433,61 @@ class SquaredL2Norm(LegendreFunction):
         return y - (1/L)*g
 
 
-class SumOf2nd4thPowers(LegendreFunction):
+class L2L1Linf(LegendreFunction):
     """
-    h(x) = (1/2)||x||_2^2 + (M/4)||x||_2^4
-    """       
-    def __init__(self, M):
-        self.M = M
+    usng h(x) = (1/2)||x||_2^2 in solving problems of the form
     
+        minimize    f(x) + lamda * ||x||_1
+        subject to  ||x||_inf <= B
+        
+    """       
+    def __init__(self, lamda=0, B=1): 
+        self.lamda = lamda
+        self.B = 1.0
+        
     def __call__(self, x):
-        normsq = np.dot(x, x)
-        return 0.5 * normsq + (self.M / 4) * normsq**2
+        return 0.5*np.dot(x, x)
 
-    def gradient(self, x):
-        normsq = np.dot(x, x)         
-        return (1 + self.M * normsq) * x
+    def extra_Psi(self, x):
+        """
+        return lamda * ||x||_1
+        """
+        return self.lamda * x.sum()
+
+    def gradient(self, x):         
+        """
+        gradient of h(x) = (1/2)||x||_2^2
+        """
+        return x
 
     def divergence(self, x, y):
-        assert x.shape == y.shape, "Bregman div: x and y not same shape."
-        return self.__call__(x) - (self.__call__(y) 
-                                   + np.dot(self.gradient(y), x-y))
+        """
+        Bregman divergence D(x, y) = (1/2)||x-y||_2^2
+        """
+        assert x.shape == y.shape, "L2L1Linf: x and y not same shape."
+        xy = x - y
+        return 0.5*np.dot(xy, xy)
+
+    def prox_map(self, g, L):
+        """
+        Return argmin_{x in C} { Psi(x) + <g, x> + L * h(x) }
+        """
+        assert L > 0, "L2L1Linf: L should be positive."
+        x = -(1.0/L) * g
+        threshold = self.lamda / L
+        mask_pos = (x > threshold)
+        mask_neg = (x < -threshold)
+        xst = np.zeros(x.size)
+        xst[mask_pos] = x[mask_pos] - threshold
+        xst[mask_neg] = x[mask_neg] + threshold
+        np.clip(xst, -self.B, self.B, out=xst)
+        return xst
+        
+    def div_prox_map(self, y, g, L):
+        """
+        Return argmin_{x in C} { Psi(x) + <g, x> + L * D(x,y)  } 
+        """
+        assert y.shape == g.shape and L > 0, "Vectors y and g not same shape."
+        return self.prox_map(g - L*y, L)
+
         
