@@ -475,13 +475,11 @@ class L2L1Linf(LegendreFunction):
         assert L > 0, "L2L1Linf: L should be positive."
         x = -(1.0/L) * g
         threshold = self.lamda / L
-        mask_pos = (x > threshold)
-        mask_neg = (x < -threshold)
-        xst = np.zeros(x.size)
-        xst[mask_pos] = x[mask_pos] - threshold
-        xst[mask_neg] = x[mask_neg] + threshold
-        np.clip(xst, -self.B, self.B, out=xst)
-        return xst
+        x[abs(x) <= threshold] = 0
+        x[x > threshold] -= threshold
+        x[x < threshold] += threshold
+        np.clip(x, -self.B, self.B, out=x)
+        return x
         
     def div_prox_map(self, y, g, L):
         """
