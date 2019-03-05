@@ -443,7 +443,7 @@ class L2L1Linf(LegendreFunction):
     """       
     def __init__(self, lamda=0, B=1): 
         self.lamda = lamda
-        self.B = 1.0
+        self.B = B
         
     def __call__(self, x):
         return 0.5*np.dot(x, x)
@@ -452,7 +452,7 @@ class L2L1Linf(LegendreFunction):
         """
         return lamda * ||x||_1
         """
-        return self.lamda * x.sum()
+        return self.lamda * np.sum(abs(x))
 
     def gradient(self, x):         
         """
@@ -476,8 +476,8 @@ class L2L1Linf(LegendreFunction):
         x = -(1.0/L) * g
         threshold = self.lamda / L
         x[abs(x) <= threshold] = 0
-        x[x > threshold] -= threshold
-        x[x < threshold] += threshold
+        x[x >  threshold] -= threshold
+        x[x < -threshold] += threshold
         np.clip(x, -self.B, self.B, out=x)
         return x
         
