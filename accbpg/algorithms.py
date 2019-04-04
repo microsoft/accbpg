@@ -29,7 +29,7 @@ def BPG(f, h, L, x0, maxitrs, verbose=True, verbskip=1, stop_eps=1e-16):
     
     Fx = np.zeros(maxitrs)
     
-    x = x0
+    x = np.copy(x0)
     for k in range(maxitrs):
         fx, g = f.func_grad(x)
         Fx[k] = fx + h.extra_Psi(x)
@@ -78,7 +78,7 @@ def BPG_LS(f, h, L, x0, maxitrs, linesearch=True, ls_ratio=2, ls_adapt=True,
     Fx = np.zeros(maxitrs)
     Ls = np.ones(maxitrs) * L
     
-    x = x0
+    x = np.copy(x0)
     for k in range(maxitrs):
         fx, g = f.func_grad(x)
         Fx[k] = fx + h.extra_Psi(x)
@@ -158,8 +158,8 @@ def ABPG(f, h, L, gamma, x0, maxitrs, theta_eq=False, restart=False,
     Fx = np.zeros(maxitrs)
     Gdiv = np.zeros(maxitrs)
     
-    x = x0
-    z = x0
+    x = np.copy(x0)
+    z = np.copy(x0)
     theta = 1.0     # initialize theta = 1 for updating with equality 
     kk = 0          # separate counter for theta_k, easy for restart
     for k in range(maxitrs):
@@ -247,8 +247,8 @@ def ABPG_expo(f, h, L, gamma0, x0, maxitrs, delta=0.2, theta_eq=True,
     Gamma = np.ones(maxitrs) * gamma0
     
     gamma = gamma0
-    x = x0
-    z = x0
+    x = np.copy(x0)
+    z = np.copy(x0)
     theta = 1.0     # initialize theta = 1 for updating with equality 
     kk = 0          # separate counter for theta_k, easy for restart
     for k in range(maxitrs):
@@ -353,8 +353,8 @@ def ABPG_gain(f, h, L, gamma, x0, maxitrs, G0=1,
     Gain = np.ones(maxitrs) * G0
     Gdiv = np.zeros(maxitrs)
     
-    x = x0
-    z = x0
+    x = np.copy(x0)
+    z = np.copy(x0)
     G = G0
     theta = 1.0     # initialize theta = 1 for updating with equality 
     kk = 0          # separate counter for theta_k, easy for restart
@@ -463,8 +463,8 @@ def ABDA(f, h, L, gamma, x0, maxitrs, theta_eq=True,
     Fx = np.zeros(maxitrs)
     Gdiv = np.zeros(maxitrs)
     
-    x = x0
-    z = x0
+    x = np.copy(x0)
+    z = np.copy(x0)
     theta = 1.0     # initialize theta = 1 for updating with equality 
     kk = 0          # separate counter for theta_k, easy for restart
     gavg = np.zeros(x.size)

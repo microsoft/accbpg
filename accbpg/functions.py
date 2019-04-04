@@ -38,7 +38,7 @@ class DOptimalObj(RSmoothFunction):
     def gradient(self, x):
         return self.func_grad(x, flag=1)
         
-    def func_grad(self, x, flag=2):
+    def func_grad_solve(self, x, flag=2):
         assert x.size == self.n, "DOptimalObj: x.size not equal to n"
         assert x.min() >= 0,     "DOptimalObj: x needs to be nonnegative"
         sx = np.sqrt(x)
@@ -54,6 +54,27 @@ class DOptimalObj(RSmoothFunction):
         for i in range(self.n):
             g[i] = - np.dot(self.H[:,i], Hsx[:,i])
             
+        if flag == 1:       # only return gradient
+            return g
+        
+        # return both function value and gradient
+        f = -np.log(np.linalg.det(HXHT))
+        return f, g
+
+    def func_grad(self, x, flag=2):
+        assert x.size == self.n, "DOptimalObj: x.size not equal to n"
+        assert x.min() >= 0,     "DOptimalObj: x needs to be nonnegative"
+        HX = self.H*x;    # using numpy array broadcast
+        HXHT = np.dot(self.H,HX.T)
+        #HXHT = np.dot(self.H*x, self.H.T)
+        
+        if flag == 0:       # only return function value
+            f = -np.log(np.linalg.det(HXHT))
+            return f
+        
+        HXHTinvH = np.dot(np.linalg.inv(HXHT), self.H)
+        g = - np.sum(self.H * HXHTinvH, axis=0)
+
         if flag == 1:       # only return gradient
             return g
         
@@ -486,6 +507,9 @@ class L2L1Linf(LegendreFunction):
         Return argmin_{x in C} { Psi(x) + <g, x> + L * D(x,y)  } 
         """
         assert y.shape == g.shape and L > 0, "Vectors y and g not same shape."
-        return self.prox_map(g - L*y, L)
+        #return self.prox_map(g - L*y, L)
 
+        x = self.prox_map(g - L*y, L)
+        x[-1] = y[-1]
+        return x
         
