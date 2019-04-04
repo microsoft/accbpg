@@ -28,7 +28,8 @@ def D_opt_design(m, n, randseed=-1):
     
     return f, h, L, x0
 
-def D_opt_KYinit(V, margin=0.0):
+
+def D_opt_KYinit(V):
     """
     Return a sparse initial point for MVE or D-optimal design problem
     proposed by Kuman and Yildirim (JOTA 126(1):1-21, 2005)
@@ -40,10 +41,10 @@ def D_opt_KYinit(V, margin=0.0):
         return (1.0/n)*np.ones(n)
     
     I = []
-    Q = np.zeros(m, m)
+    Q = np.zeros((m, m))
     # Using (unstable) Gram-Schmidt without calling QR repetitively
     for i in range(m):
-        b = np.linalg.rand(m)
+        b = np.random.rand(m)
         q = np.copy(b)
         for j in range(i):
             Rij = np.dot(Q[:,j], b) 
@@ -60,11 +61,12 @@ def D_opt_KYinit(V, margin=0.0):
             q = q - Rij * Q[:,j]
         Q[:,i] = q / np.linalg.norm(q)
         
-    x0 = margin * np.ones(n)
-    x0[I] = np.ones(2 * m) / (2.0 * m) - (n - 2*m) * margin/(2.0 * m)
+    x0 = np.zeros(n)
+    x0[I] = np.ones(len(I)) / len(I)
+    x0 /= x0.sum()  # in case there are repeated entries in I, scale to sum 1
 
     return x0
-    
+        
 
 def Poisson_regrL1(m, n, noise=0.01, lamda=0, randseed=-1, normalizeA=True):
     """

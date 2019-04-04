@@ -15,6 +15,8 @@ def D_opt_FW(V, x0, eps, maxitrs, verbose=True, verbskip=1):
     """
     m, n = V.shape
     F = np.zeros(maxitrs)
+    SP = np.zeros(maxitrs)
+    SN = np.zeros(maxitrs)
 
     x = np.copy(x0)
     VXVT = np.dot(V*x, V.T)
@@ -35,11 +37,16 @@ def D_opt_FW(V, x0, eps, maxitrs, verbose=True, verbskip=1):
         w_xpos = w[x>0]
         j = np.argmin(w_xpos)
 
+        eps_pos = w[i] / m - 1
+        eps_neg = 1 - w_xpos[j] / m
+        SP[k] = eps_pos
+        SN[k] = eps_neg
+
         if verbose and k % verbskip == 0:
             print("{0:6d}  {1:10.3e}  {2:10.3e}  {3:10.3e}".format(
-                    k, F[k], w[i]/m-1, 1-w_xpos[j]/m))
+                    k, F[k], eps_pos, eps_neg))
 
-        if w[i] <= (1 + eps) * m and w_xpos[j] >= (1 - eps) * m:
+        if eps_pos <= eps and eps_neg <= eps:
             break
         
         t = (w[i] / m - 1) / (w[i] - 1)
@@ -50,11 +57,14 @@ def D_opt_FW(V, x0, eps, maxitrs, verbose=True, verbskip=1):
         detVXVT *= np.power(1 - t, m - 1) * (1 + t * (w[i] - 1)) 
    
     F = F[0:k+1]
-    return x, F
+    SP = SP[0:k+1]
+    SN = SN[0:k+1]
+    return x, F, SP, SN
+
 
 def D_opt_WATY(V, x0, eps, maxitrs, verbose=True, verbskip=1):
     """
-    Solve the D-optimal design problem by the Frank-Wolfe algorithm
+    Solve the D-optimal design problem by Frank-Wolfe (Wolfe-Atwood) algorithm
         minimize     - log(det(V*diag(x)*V'))
         subject to   x >= 0  and sum_i x_i=1
     where V is m by n matrix and x belongs to n-dimensional simplex
@@ -62,6 +72,8 @@ def D_opt_WATY(V, x0, eps, maxitrs, verbose=True, verbskip=1):
     """
     m, n = V.shape
     F = np.zeros(maxitrs)
+    SP = np.zeros(maxitrs)
+    SN = np.zeros(maxitrs)
 
     x = np.copy(x0)
     VXVT = np.dot(V*x, V.T)
@@ -69,7 +81,7 @@ def D_opt_WATY(V, x0, eps, maxitrs, verbose=True, verbskip=1):
     H = np.linalg.inv(VXVT)
 
     if verbose:
-        print("\nFrank-Wolfe method for D-optimal design")
+        print("\nFrank-Wolfe method (with Wolfe-away step) for D-optimal design")
         print("     k      F(x)     w_max/m-1   1-w_min/m")
         
     for k in range(maxitrs):
@@ -85,6 +97,8 @@ def D_opt_WATY(V, x0, eps, maxitrs, verbose=True, verbskip=1):
 
         eps_pos = w[i] / m - 1
         eps_neg = 1 - w[j] / m
+        SP[k] = eps_pos
+        SN[k] = eps_neg
     
         if verbose and k % verbskip == 0:
             print("{0:6d}  {1:10.3e}  {2:10.3e}  {3:10.3e}".format(
@@ -109,5 +123,7 @@ def D_opt_WATY(V, x0, eps, maxitrs, verbose=True, verbskip=1):
             detVXVT *= np.power(1 + t, m - 1) * (1 + t - t * w[i]) 
 
     F = F[0:k+1]
-    return x, F
+    SP = SP[0:k+1]
+    SN = SN[0:k+1]
+    return x, F, SP, SN
 
