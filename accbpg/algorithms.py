@@ -3,6 +3,7 @@
 
 
 import numpy as np
+import time
 
 
 def BPG(f, h, L, x0, maxitrs, verbose=True, verbskip=1, stop_eps=1e-16):
@@ -25,27 +26,31 @@ def BPG(f, h, L, x0, maxitrs, verbose=True, verbskip=1, stop_eps=1e-16):
 
     if verbose:
         print("\nBPG method for min_{x in C} F(x) = f(x) + Psi(x)")
-        print("     k      F(x)")
+        print("     k      F(x)     time")
     
+    start_time = time.time()
     Fx = np.zeros(maxitrs)
+    T = np.zeros(maxitrs)
     
     x = np.copy(x0)
     for k in range(maxitrs):
         fx, g = f.func_grad(x)
         Fx[k] = fx + h.extra_Psi(x)
+        T[k] = time.time() - start_time
         
         x = h.div_prox_map(x, g, L)
         
         # store and display computational progress
         if verbose and k % verbskip == 0:
-            print("{0:6d}  {1:10.3e}".format(k, Fx[k]))
+            print("{0:6d}  {1:10.3e}  {2:6.1f}".format(k, Fx[k], T[k]))
 
         # stopping criteria
         if k > 0 and abs(Fx[k]-Fx[k-1]) < stop_eps:
             break;
 
     Fx = Fx[0:k+1]
-    return x, Fx        
+    T = T[0:k+1]
+    return x, Fx, T        
 
 
 def BPG_LS(f, h, L, x0, maxitrs, linesearch=True, ls_ratio=2, ls_adapt=True,
@@ -73,15 +78,18 @@ def BPG_LS(f, h, L, x0, maxitrs, linesearch=True, ls_ratio=2, ls_adapt=True,
 
     if verbose:
         print("\nBPG_LS method for min_{x in C} F(x) = f(x) + Psi(x)")
-        print("     k      F(x)          Lk")
+        print("     k      F(x)          Lk     time")
     
+    start_time = time.time()
     Fx = np.zeros(maxitrs)
     Ls = np.ones(maxitrs) * L
+    T = np.zeros(maxitrs)
     
     x = np.copy(x0)
     for k in range(maxitrs):
         fx, g = f.func_grad(x)
         Fx[k] = fx + h.extra_Psi(x)
+        T[k] = time.time() - start_time
         
         if linesearch:
             if ls_adapt:
@@ -97,7 +105,7 @@ def BPG_LS(f, h, L, x0, maxitrs, linesearch=True, ls_ratio=2, ls_adapt=True,
         # store and display computational progress
         Ls[k] = L
         if verbose and k % verbskip == 0:
-            print("{0:6d}  {1:10.3e}  {2:10.3}".format(k, Fx[k], L))
+            print("{0:6d}  {1:10.3e}  {2:10.3e}  {3:6.1f}".format(k, Fx[k], L, T[k]))
             
         # stopping criteria
         if k > 0 and abs(Fx[k]-Fx[k-1]) < stop_eps:
@@ -105,7 +113,8 @@ def BPG_LS(f, h, L, x0, maxitrs, linesearch=True, ls_ratio=2, ls_adapt=True,
 
     Fx = Fx[0:k+1]
     Ls = Ls[0:k+1]
-    return x, Fx, Ls
+    T = T[0:k+1]
+    return x, Fx, Ls, T
 
 
 def solve_theta(theta, gamma, gainratio=1):
