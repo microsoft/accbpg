@@ -26,7 +26,7 @@ def BPG(f, h, L, x0, maxitrs, verbose=True, verbskip=1, stop_eps=1e-16):
 
     if verbose:
         print("\nBPG method for min_{x in C} F(x) = f(x) + Psi(x)")
-        print("     k      F(x)     time")
+        print("     k      F(x)      time")
     
     start_time = time.time()
     Fx = np.zeros(maxitrs)
@@ -78,7 +78,7 @@ def BPG_LS(f, h, L, x0, maxitrs, linesearch=True, ls_ratio=2, ls_adapt=True,
 
     if verbose:
         print("\nBPG_LS method for min_{x in C} F(x) = f(x) + Psi(x)")
-        print("     k      F(x)          Lk     time")
+        print("     k      F(x)          Lk      time")
     
     start_time = time.time()
     Fx = np.zeros(maxitrs)
@@ -162,10 +162,12 @@ def ABPG(f, h, L, gamma, x0, maxitrs, theta_eq=False, restart=False,
     if verbose:
         print("\nABPG method for minimize_{x in C} F(x) = f(x) + Psi(x)")
         print("     k      F(x)       theta" + 
-              "        TSG       D(x+,y)     D(z+,z)")
+              "        TSG       D(x+,y)     D(z+,z)     time")
     
+    start_time = time.time()
     Fx = np.zeros(maxitrs)
     Gdiv = np.zeros(maxitrs)
+    T = np.zeros(maxitrs)
     
     x = np.copy(x0)
     z = np.copy(x0)
@@ -175,6 +177,7 @@ def ABPG(f, h, L, gamma, x0, maxitrs, theta_eq=False, restart=False,
         # function value at previous iteration
         fx = f(x)   
         Fx[k] = fx + h.extra_Psi(x)
+        T[k] = time.time() - start_time
         
         # Update three iterates x, y and z
         z_1 = z
@@ -197,8 +200,8 @@ def ABPG(f, h, L, gamma, x0, maxitrs, theta_eq=False, restart=False,
         # store and display computational progress
         Gdiv[k] = Gdr
         if verbose and k % verbskip == 0:
-            print("{0:6d}  {1:10.3e}  {2:10.3e}  {3:10.3e}  {4:10.3e}  {5:10.3e}".format(
-                    k, Fx[k], theta, Gdr, dxy, dzz))
+            print("{0:6d}  {1:10.3e}  {2:10.3e}  {3:10.3e}  {4:10.3e}  {5:10.3e}  {6:6.1f}".format(
+                    k, Fx[k], theta, Gdr, dxy, dzz, T[k]))
 
         # restart if gradient predicts objective increase
         kk += 1
@@ -215,7 +218,8 @@ def ABPG(f, h, L, gamma, x0, maxitrs, theta_eq=False, restart=False,
 
     Fx = Fx[0:k+1]
     Gdiv = Gdiv[0:k+1]
-    return x, Fx, Gdiv
+    T = T[0:k+1]
+    return x, Fx, Gdiv, T
 
 
 def ABPG_expo(f, h, L, gamma0, x0, maxitrs, delta=0.2, theta_eq=True, 
@@ -249,11 +253,13 @@ def ABPG_expo(f, h, L, gamma0, x0, maxitrs, delta=0.2, theta_eq=True,
     if verbose:
         print("\nABPG_expo method for min_{x in C} F(x) = f(x) + Psi(x)")
         print("     k      F(x)       theta       gamma" +
-              "        TSG       D(x+,y)     D(z+,z)")
+              "        TSG       D(x+,y)     D(z+,z)     time")
     
+    start_time = time.time()
     Fx = np.zeros(maxitrs)
     Gdiv = np.zeros(maxitrs)
     Gamma = np.ones(maxitrs) * gamma0
+    T = np.zeros(maxitrs)
     
     gamma = gamma0
     x = np.copy(x0)
@@ -264,6 +270,7 @@ def ABPG_expo(f, h, L, gamma0, x0, maxitrs, delta=0.2, theta_eq=True,
         # function value at previous iteration
         fx = f(x)   
         Fx[k] = fx + h.extra_Psi(x)
+        T[k] = time.time() - start_time
         
         # Update three iterates x, y and z
         z_1 = z
@@ -301,8 +308,8 @@ def ABPG_expo(f, h, L, gamma0, x0, maxitrs, delta=0.2, theta_eq=True,
         Gdiv[k] = Gdr
         Gamma[k] = gamma
         if verbose and k % verbskip == 0:
-            print("{0:6d}  {1:10.3e}  {2:10.3e}  {3:10.3e}  {4:10.3e}  {5:10.3e}  {6:10.3e}".format(
-                    k, Fx[k], theta, gamma, Gdr, dxy, dzz))
+            print("{0:6d}  {1:10.3e}  {2:10.3e}  {3:10.3e}  {4:10.3e}  {5:10.3e}  {6:10.3e}  {7:6.1f}".format(
+                    k, Fx[k], theta, gamma, Gdr, dxy, dzz, T[k]))
 
         # restart if gradient predicts objective increase
         kk += 1
@@ -320,7 +327,8 @@ def ABPG_expo(f, h, L, gamma0, x0, maxitrs, delta=0.2, theta_eq=True,
     Fx = Fx[0:k+1]
     Gamma = Gamma[0:k+1]
     Gdiv = Gdiv[0:k+1]
-    return x, Fx, Gamma, Gdiv
+    T = T[0:k+1]
+    return x, Fx, Gamma, Gdiv, T
 
 
 def ABPG_gain(f, h, L, gamma, x0, maxitrs, G0=1, 
@@ -356,21 +364,27 @@ def ABPG_gain(f, h, L, gamma, x0, maxitrs, G0=1,
     if verbose:
         print("\nABPG_gain method for min_{x in C} F(x) = f(x) + Psi(x)")
         print("     k      F(x)       theta         Gk" + 
-              "         TSG       D(x+,y)     D(z+,z)")
-    
+              "         TSG       D(x+,y)     D(z+,z)      Gavg       time")
+
+    start_time = time.time()    
     Fx = np.zeros(maxitrs)
     Gain = np.ones(maxitrs) * G0
     Gdiv = np.zeros(maxitrs)
+    Gavg = np.zeros(maxitrs)
+    T = np.zeros(maxitrs)
     
     x = np.copy(x0)
     z = np.copy(x0)
     G = G0
+    # logGavg = (gamma*log(G0) + log(G_1) + ... + log(Gk)) / (k+gamma)
+    sumlogG = gamma * np.log(G) 
     theta = 1.0     # initialize theta = 1 for updating with equality 
     kk = 0          # separate counter for theta_k, easy for restart
     for k in range(maxitrs):
         # function value at previous iteration
         fx = f(x)   
         Fx[k] = fx + h.extra_Psi(x)
+        T[k] = time.time() - start_time
         
         # Update three iterates x, y and z
         z_1 = z
@@ -417,9 +431,11 @@ def ABPG_gain(f, h, L, gamma, x0, maxitrs, G0=1,
         # store and display computational progress
         Gain[k] = G
         Gdiv[k] = Gdr
+        sumlogG += np.log(G)
+        Gavg[k] = np.exp(sumlogG / (gamma + k)) 
         if verbose and k % verbskip == 0:
-            print("{0:6d}  {1:10.3e}  {2:10.3e}  {3:10.3e}  {4:10.3e}  {5:10.3e}  {6:10.3e}".format(
-                    k, Fx[k], theta, G, Gdr, dxy, dzz))
+            print("{0:6d}  {1:10.3e}  {2:10.3e}  {3:10.3e}  {4:10.3e}  {5:10.3e}  {6:10.3e}  {7:10.3e}  {8:6.1f}".format(
+                    k, Fx[k], theta, G, Gdr, dxy, dzz, Gavg[k], T[k]))
 
         # restart if gradient predicts objective increase
         kk += 1
@@ -437,7 +453,9 @@ def ABPG_gain(f, h, L, gamma, x0, maxitrs, G0=1,
     Fx = Fx[0:k+1]
     Gain = Gain[0:k+1]
     Gdiv = Gdiv[0:k+1]
-    return x, Fx, Gain, Gdiv
+    Gavg = Gavg[0:k+1]
+    T = T[0:k+1]
+    return x, Fx, Gain, Gdiv, Gavg, T
 
 
 def ABDA(f, h, L, gamma, x0, maxitrs, theta_eq=True,
@@ -467,10 +485,12 @@ def ABDA(f, h, L, gamma, x0, maxitrs, theta_eq=True,
     if verbose:
         print("\nABDA method for min_{x in C} F(x) = f(x) + Psi(x)")
         print("     k      F(x)       theta" + 
-              "        TSG       D(x+,y)     D(z+,z)")
+              "        TSG       D(x+,y)     D(z+,z)     time")
     
+    start_time = time.time()
     Fx = np.zeros(maxitrs)
     Gdiv = np.zeros(maxitrs)
+    T = np.zeros(maxitrs)
     
     x = np.copy(x0)
     z = np.copy(x0)
@@ -482,6 +502,7 @@ def ABDA(f, h, L, gamma, x0, maxitrs, theta_eq=True,
         # function value at previous iteration
         fx = f(x)   
         Fx[k] = fx + h.extra_Psi(x)
+        T[k] = time.time() - start_time
         
         # Update three iterates x, y and z
         z_1 = z
@@ -506,8 +527,8 @@ def ABDA(f, h, L, gamma, x0, maxitrs, theta_eq=True,
         # store and display computational progress
         Gdiv[k] = Gdr
         if verbose and k % verbskip == 0:
-            print("{0:6d}  {1:10.3e}  {2:10.3e}  {3:10.3e}  {4:10.3e}  {5:10.3e}".format(
-                    k, Fx[k], theta, Gdr, dxy, dzz))
+            print("{0:6d}  {1:10.3e}  {2:10.3e}  {3:10.3e}  {4:10.3e}  {5:10.3e}  {6:6.1f}".format(
+                    k, Fx[k], theta, Gdr, dxy, dzz, T[k]))
 
         kk += 1
         # restart does not work for ABDA (restart = False)
@@ -526,4 +547,5 @@ def ABDA(f, h, L, gamma, x0, maxitrs, theta_eq=True,
 
     Fx = Fx[0:k+1]
     Gdiv = Gdiv[0:k+1]
-    return x, Fx, Gdiv
+    T = T[0:k+1]
+    return x, Fx, Gdiv, T

@@ -17,19 +17,19 @@ def compare_gamma(f, h, L, x0, gamma=[1, 1.5, 2], gammaDA=2, theta_eq=True,
     G = []
     labels = []
     
-    (x_BPG, F_BPG) = BPG(f, h, L, x0, maxitrs, verbskip=dispskip)
+    (x_BPG, F_BPG, _) = BPG(f, h, L, x0, maxitrs, verbskip=dispskip)
     F.append(F_BPG)
     G.append(np.ones(len(F_BPG)))
     labels.append(r'BPG')
     
     for i in range(len(gamma)):    
-        (x_ABPG, F_ABPG, G_ABPG) = ABPG(f, h, L, gamma[i], x0, maxitrs, 
+        (x_ABPG, F_ABPG, G_ABPG, _) = ABPG(f, h, L, gamma[i], x0, maxitrs, 
                 theta_eq=theta_eq, restart=restart, verbskip=dispskip)
         F.append(F_ABPG)
         G.append(G_ABPG)
         labels.append(r'ABPG $\gamma$={0:3.1f}'.format(gamma[i]))
         
-    (x_ABDA, F_ABDA, G_ABDA) = ABDA(f, h, L, gammaDA, x0, maxitrs, 
+    (x_ABDA, F_ABDA, G_ABDA, _) = ABDA(f, h, L, gammaDA, x0, maxitrs, 
                                     theta_eq=theta_eq, verbskip=dispskip)
     F.append(F_ABDA)
     G.append(G_ABDA)
@@ -50,32 +50,32 @@ def compare_adapt(f, h, L, x0, gamma=2, theta_eq=True, restart=False, rho=1.2,
     G = []
     labels = []
     
-    (x_BPG, F_BPG) = BPG(f, h, L, x0, maxitrs, verbskip=dispskip)
+    (x_BPG, F_BPG, _) = BPG(f, h, L, x0, maxitrs, verbskip=dispskip)
     F.append(F_BPG)
     G.append(np.ones(len(F_BPG)))
     labels.append(r'BPG')
     
-    (x_BPG, F_BPG, L_BPG) = BPG_LS(f, h, L, x0, maxitrs, ls_ratio=rho, 
+    (x_BPG, F_BPG, L_BPG, _) = BPG_LS(f, h, L, x0, maxitrs, ls_ratio=rho, 
                             ls_adapt=True, verbskip=dispskip, stop_eps=1e-24)
     F.append(F_BPG)
     G.append(L_BPG)
     labels.append(r'BPG-LS')
     
-    (x_ABPG, F_ABPG, G_ABPG) = ABPG(f, h, L, gamma, x0, maxitrs, 
+    (x_ABPG, F_ABPG, G_ABPG, _) = ABPG(f, h, L, gamma, x0, maxitrs, 
                 theta_eq=theta_eq, restart=restart, verbskip=dispskip)
     F.append(F_ABPG)
     G.append(G_ABPG)
     labels.append(r'ABPG')
 
-    (x_ABPG, F_ABPG, Gamma2, G_ABPG) = ABPG_expo(f, h, L, gamma+1, x0, maxitrs, 
-                theta_eq=theta_eq, checkdiv=checkdiv, gainmargin=3, 
+    (x_ABPG, F_ABPG, Gamma2, G_ABPG, _) = ABPG_expo(f, h, L, gamma+1, x0, 
+                maxitrs, theta_eq=theta_eq, checkdiv=checkdiv, gainmargin=3, 
                 restart=restart, verbskip=dispskip)
     F.append(F_ABPG)
     G.append(G_ABPG)
     labels.append(r'ABPG-e')
     
-    (x_ABPG, F_ABPG, G_ABPG, Gdiv2) = ABPG_gain(f, h, L, gamma, x0, maxitrs, 
-                                    G0=0.1, ls_adapt=True,
+    (x_ABPG, F_ABPG, G_ABPG, Gdiv2, Gavg, _) = ABPG_gain(f, h, L, gamma, x0, 
+                                    maxitrs, G0=0.1, ls_adapt=True,
                                     ls_increment=rho, ls_decrement=rho,
                                     theta_eq=theta_eq, checkdiv=checkdiv, 
                                     restart=restart, verbskip=dispskip)
@@ -98,31 +98,31 @@ def compare_restart(f, h, L, x0, gamma=2, theta_eq=True, rho=1.2,
     G = []
     labels = []
     
-    (x_BPG, F_BPG) = BPG(f, h, L, x0, maxitrs, verbskip=dispskip)
+    (x_BPG, F_BPG, _) = BPG(f, h, L, x0, maxitrs, verbskip=dispskip)
     F.append(F_BPG)
     G.append(np.ones(len(F_BPG)))
     labels.append(r'BPG')
     
-    (x_BPG, F_BPG, L_BPG) = BPG_LS(f, h, L, x0, maxitrs, ls_ratio=rho, 
+    (x_BPG, F_BPG, L_BPG, _) = BPG_LS(f, h, L, x0, maxitrs, ls_ratio=rho, 
                             ls_adapt=True, verbskip=dispskip, stop_eps=1e-24)
     F.append(F_BPG)
     G.append(L_BPG)
     labels.append(r'BPG-LS')
     
-    (x_ABPG, F_ABPG, G_ABPG) = ABPG(f, h, L, gamma, x0, maxitrs, 
+    (x_ABPG, F_ABPG, G_ABPG, _) = ABPG(f, h, L, gamma, x0, maxitrs, 
                 theta_eq=theta_eq, restart=False, verbskip=dispskip)
     F.append(F_ABPG)
     G.append(G_ABPG)
     labels.append(r'ABPG')
 
-    (x_ABPG, F_ABPG, G_ABPG) = ABPG(f, h, L, gamma, x0, maxitrs, 
+    (x_ABPG, F_ABPG, G_ABPG, _) = ABPG(f, h, L, gamma, x0, maxitrs, 
                 theta_eq=theta_eq, restart=True, verbskip=dispskip)
     F.append(F_ABPG)
     G.append(G_ABPG)
     labels.append(r'ABPG RS')
 
-    (x_ABPG, F_ABPG, G_ABPG, Gdiv2) = ABPG_gain(f, h, L, gamma, x0, maxitrs, 
-                                    G0=0.1, ls_adapt=True,
+    (x_ABPG, F_ABPG, G_ABPG, Gdiv2, Gavg, _) = ABPG_gain(f, h, L, gamma, x0, 
+                                    maxitrs, G0=0.1, ls_adapt=True,
                                     ls_increment=rho, ls_decrement=rho,
                                     theta_eq=theta_eq, checkdiv=checkdiv, 
                                     restart=False, verbskip=dispskip)
@@ -130,8 +130,8 @@ def compare_restart(f, h, L, x0, gamma=2, theta_eq=True, rho=1.2,
     G.append(G_ABPG)
     labels.append(r'ABPG-g')
     
-    (x_ABPG, F_ABPG, G_ABPG, Gdiv2) = ABPG_gain(f, h, L, gamma, x0, maxitrs, 
-                                    G0=0.1, ls_adapt=True,
+    (x_ABPG, F_ABPG, G_ABPG, Gdiv2, Gavg, _) = ABPG_gain(f, h, L, gamma, x0, 
+                                    maxitrs, G0=0.1, ls_adapt=True,
                                     ls_increment=rho, ls_decrement=rho,
                                     theta_eq=theta_eq, checkdiv=checkdiv, 
                                     restart=True, verbskip=dispskip)
