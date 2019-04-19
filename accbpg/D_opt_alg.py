@@ -13,6 +13,20 @@ def D_opt_FW(V, x0, eps, maxitrs, verbose=True, verbskip=1):
         subject to   x >= 0  and sum_i x_i=1
     where V is m by n matrix and x belongs to n-dimensional simplex
 
+    Inputs:
+        V:  matrix of size m by n with m < n
+        x0: initial point
+        eps: precision for optimality conditions (complementary slackness)
+        maxitrs: maximum number of iterations
+        verbose:  display computational progress (True or False)
+        verbskip: number of iterations to skip between displays
+
+    Returns (x, F, SP, SN, T):
+        x:  the last iterate of BPG
+        F:  array storing F(x[k]) for all k
+        SP: positive slackness
+        SN: negative slackness
+        T:  array storing time used up to iteration k
     """
     start_time = time.time()
     
@@ -79,8 +93,24 @@ def D_opt_WATY(V, x0, eps, maxitrs, verbose=True, verbskip=1):
     Solve the D-optimal design problem by Frank-Wolfe (Wolfe-Atwood) algorithm
         minimize     - log(det(V*diag(x)*V'))
         subject to   x >= 0  and sum_i x_i=1
-    where V is m by n matrix and x belongs to n-dimensional simplex
+    where V is m by n matrix and x belongs to n-dimensional simplex.
+    
+    This is equivalent to the Frank-Wolfe algorithm with Away steps.
 
+    Inputs:
+        V:  matrix of size m by n with m < n
+        x0: initial point
+        eps: precision for optimality conditions (complementary slackness)
+        maxitrs: maximum number of iterations
+        verbose:  display computational progress (True or False)
+        verbskip: number of iterations to skip between displays
+
+    Returns (x, F, SP, SN, T):
+        x:  the last iterate of BPG
+        F:  array storing F(x[k]) for all k
+        SP: positive slackness
+        SN: negative slackness
+        T:  array storing time used up to iteration k
     """
     start_time = time.time()
 

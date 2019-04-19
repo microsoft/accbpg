@@ -6,94 +6,47 @@ import numpy as np
 import time
 
 
-def BPG(f, h, L, x0, maxitrs, verbose=True, verbskip=1, stop_eps=1e-16):
-    """   
-    Bregman Proximal Gradient (BPG) method for min_{x in C} f(x) + Psi(x): 
-    x(k+1) = argmin_{x in C} { Psi(x) + < f'(x(k)), x > + L*D_h(x,x(k)) }
-    
-    Inputs: 
-        f, h, L:  f is L-smooth relative to h, and Psi is defined with h
-        x0:       initial point to start algorithm
-        maxitrs:  maximum number of iterations
-        verbose:  display computational progress (True or False)
-        verbskip: number of iterations to skip between displays
-        stop_eps: stop if F(x[k])-F(x[k-1]) < stop_eps, where F(x)=f(x)+Psi(x)
-    
-    Returns (x, Fx):
-        x:  the last iterate of BPG
-        Fx: array storing F(x[k]) for all k
-    """
-
-    if verbose:
-        print("\nBPG method for min_{x in C} F(x) = f(x) + Psi(x)")
-        print("     k      F(x)      time")
-    
-    start_time = time.time()
-    Fx = np.zeros(maxitrs)
-    T = np.zeros(maxitrs)
-    
-    x = np.copy(x0)
-    for k in range(maxitrs):
-        fx, g = f.func_grad(x)
-        Fx[k] = fx + h.extra_Psi(x)
-        T[k] = time.time() - start_time
-        
-        x = h.div_prox_map(x, g, L)
-        
-        # store and display computational progress
-        if verbose and k % verbskip == 0:
-            print("{0:6d}  {1:10.3e}  {2:6.1f}".format(k, Fx[k], T[k]))
-
-        # stopping criteria
-        if k > 0 and abs(Fx[k]-Fx[k-1]) < stop_eps:
-            break;
-
-    Fx = Fx[0:k+1]
-    T = T[0:k+1]
-    return x, Fx, T        
-
-
-def BPG_LS(f, h, L, x0, maxitrs, linesearch=True, ls_ratio=2, ls_adapt=True,
-           verbose=True, verbskip=1, stop_eps=1e-16):
+def BPG(f, h, L, x0, maxitrs, epsilon=1e-16, linesearch=True, ls_ratio=2,
+        verbose=True, verbskip=1):
     """
     Bregman Proximal Gradient (BGP) method for min_{x in C} f(x) + Psi(x): 
-    x(k+1) = argmin_{x in C} { Psi(x) + <f'(x(k)), x> + L*D_h(x,x(k))}
+        
+    x(k+1) = argmin_{x in C} { Psi(x) + <f'(x(k)), x> + L(k) * D_h(x,x(k))}
  
     Inputs:
-        f, h, L:  f is L-smooth relative to h, and Psi is defined with h
+        f, h, L:  f is L-smooth relative to h, and Psi is defined within h
         x0:       initial point to start algorithm
         maxitrs:  maximum number of iterations
+        epsilon:  stop if F(x[k])-F(x[k-1]) < epsilon, where F(x)=f(x)+Psi(x)
         linesearch:  whether or not perform line search (True or False)
         ls_ratio: backtracking line search parameter >= 1
-        ls_adapt: whether or not use adaptive line search (True or False)
         verbose:  display computational progress (True or False)
         verbskip: number of iterations to skip between displays
-        stop_eps: stop if F(x[k])-F(x[k-1]) < stop_eps, where F(x)=f(x)+Psi(x)
 
     Returns (x, Fx, Ls):
         x:  the last iterate of BPG
-        Fx: array storing F(x[k]) for all k
+        F:  array storing F(x[k]) for all k
         Ls: array storing local Lipschitz constants obtained by line search
+        T:  array storing time used up to iteration k
     """
 
     if verbose:
         print("\nBPG_LS method for min_{x in C} F(x) = f(x) + Psi(x)")
-        print("     k      F(x)          Lk      time")
+        print("     k      F(x)         Lk       time")
     
     start_time = time.time()
-    Fx = np.zeros(maxitrs)
+    F = np.zeros(maxitrs)
     Ls = np.ones(maxitrs) * L
     T = np.zeros(maxitrs)
     
     x = np.copy(x0)
     for k in range(maxitrs):
         fx, g = f.func_grad(x)
-        Fx[k] = fx + h.extra_Psi(x)
+        F[k] = fx + h.extra_Psi(x)
         T[k] = time.time() - start_time
         
         if linesearch:
-            if ls_adapt:
-                L = L / ls_ratio
+            L = L / ls_ratio
             x1 = h.div_prox_map(x, g, L)
             while f(x1) > fx + np.dot(g, x1-x) + L*h.divergence(x1, x):
                 L = L * ls_ratio
@@ -105,16 +58,16 @@ def BPG_LS(f, h, L, x0, maxitrs, linesearch=True, ls_ratio=2, ls_adapt=True,
         # store and display computational progress
         Ls[k] = L
         if verbose and k % verbskip == 0:
-            print("{0:6d}  {1:10.3e}  {2:10.3e}  {3:6.1f}".format(k, Fx[k], L, T[k]))
+            print("{0:6d}  {1:10.3e}  {2:10.3e}  {3:6.1f}".format(k, F[k], L, T[k]))
             
         # stopping criteria
-        if k > 0 and abs(Fx[k]-Fx[k-1]) < stop_eps:
+        if k > 0 and abs(F[k]-F[k-1]) < epsilon:
             break;
 
-    Fx = Fx[0:k+1]
+    F = F[0:k+1]
     Ls = Ls[0:k+1]
     T = T[0:k+1]
-    return x, Fx, Ls, T
+    return x, F, Ls, T
 
 
 def solve_theta(theta, gamma, gainratio=1):
@@ -136,27 +89,28 @@ def solve_theta(theta, gamma, gainratio=1):
     return cta
       
 
-def ABPG(f, h, L, gamma, x0, maxitrs, theta_eq=False, restart=False, 
-         verbose=True, verbskip=1, stop_eps=1e-14):
+def ABPG(f, h, L, x0, gamma, maxitrs, epsilon=1e-14, theta_eq=False, 
+         restart=False, verbose=True, verbskip=1):
     """
     Accelerated Bregman Proximal Gradient (ABPG) method for solving 
             minimize_{x in C} f(x) + Psi(x): 
 
     Inputs:
-        f, h, L:  f is L-smooth relative to h, and Psi is defined with h
-        gamma:    triangle scaling exponent (TSE) for Bregman div D_h(x,y)
+        f, h, L:  f is L-smooth relative to h, and Psi is defined within h
         x0:       initial point to start algorithm
+        gamma:    triangle scaling exponent (TSE) for Bregman div D_h(x,y)
         maxitrs:  maximum number of iterations
+        epsilon:  stop if D_h(z[k],z[k-1]) < epsilon
         theta_eq: calculate theta_k by solving equality using Newton's method
         restart:  restart the algorithm when overshooting (True or False)
         verbose:  display computational progress (True or False)
         verbskip: number of iterations to skip between displays
-        stop_eps: stop if D_h(z[k],z[k-1]) < stop_eps
 
     Returns (x, Fx, Ls):
-        x:  the last iterate of BPG
-        Fx: array storing F(x[k]) for all k
-        Gdiv: triangle scaling gains D(xk,yk)/D(zk,zk_1)/theta_k^gamma
+        x: the last iterate of BPG
+        F: array storing F(x[k]) for all k
+        G: triangle scaling gains D(xk,yk) / D(zk,zk_1) / theta_k^gamma
+        T: array storing time used up to iteration k
     """
 
     if verbose:
@@ -165,8 +119,8 @@ def ABPG(f, h, L, gamma, x0, maxitrs, theta_eq=False, restart=False,
               "        TSG       D(x+,y)     D(z+,z)     time")
     
     start_time = time.time()
-    Fx = np.zeros(maxitrs)
-    Gdiv = np.zeros(maxitrs)
+    F = np.zeros(maxitrs)
+    G = np.zeros(maxitrs)
     T = np.zeros(maxitrs)
     
     x = np.copy(x0)
@@ -176,7 +130,7 @@ def ABPG(f, h, L, gamma, x0, maxitrs, theta_eq=False, restart=False,
     for k in range(maxitrs):
         # function value at previous iteration
         fx = f(x)   
-        Fx[k] = fx + h.extra_Psi(x)
+        F[k] = fx + h.extra_Psi(x)
         T[k] = time.time() - start_time
         
         # Update three iterates x, y and z
@@ -198,10 +152,10 @@ def ABPG(f, h, L, gamma, x0, maxitrs, theta_eq=False, restart=False,
         Gdr = dxy / dzz / theta**gamma
 
         # store and display computational progress
-        Gdiv[k] = Gdr
+        G[k] = Gdr
         if verbose and k % verbskip == 0:
             print("{0:6d}  {1:10.3e}  {2:10.3e}  {3:10.3e}  {4:10.3e}  {5:10.3e}  {6:6.1f}".format(
-                    k, Fx[k], theta, Gdr, dxy, dzz, T[k]))
+                    k, F[k], theta, Gdr, dxy, dzz, T[k]))
 
         # restart if gradient predicts objective increase
         kk += 1
@@ -213,41 +167,42 @@ def ABPG(f, h, L, gamma, x0, maxitrs, theta_eq=False, restart=False,
                 z = x           # in either case, reset z = x and also y
 
         # stopping criteria
-        if dzz < stop_eps:
+        if dzz < epsilon:
             break;
 
-    Fx = Fx[0:k+1]
-    Gdiv = Gdiv[0:k+1]
+    F = F[0:k+1]
+    G = G[0:k+1]
     T = T[0:k+1]
-    return x, Fx, Gdiv, T
+    return x, F, G, T
 
 
-def ABPG_expo(f, h, L, gamma0, x0, maxitrs, delta=0.2, theta_eq=True, 
-              checkdiv=False, gainmargin=2, restart=False, 
-              verbose=True, verbskip=1, stop_eps=1e-14):
+def ABPG_expo(f, h, L, x0, gamma0, maxitrs, epsilon=1e-14, delta=0.2, 
+              theta_eq=True, checkdiv=False, Gmargin=2, restart=False, 
+              verbose=True, verbskip=1):
     """
     Accelerated Bregman Proximal Gradient method with exponent adaption for
             minimize_{x in C} f(x) + Psi(x) 
  
     Inputs:
-        f, h, L:  f is L-smooth relative to h, and Psi is defined with h
-        gamma0:   initial triangle scaling exponent(TSE) for D_h(x,y) (>2)
+        f, h, L:  f is L-smooth relative to h, and Psi is defined within h
         x0:       initial point to start algorithm
+        gamma0:   initial triangle scaling exponent(TSE) for D_h(x,y) (>2)
         maxitrs:  maximum number of iterations
+        epsilon:  stop if D_h(z[k],z[k-1]) < epsilon
         delta:    amount to decrease TSE for exponent adaption
         theta_eq: calculate theta_k by solving equality using Newton's method
         checkdiv: check triangle scaling inequality for adaption (True/False)
-        gainmargin: extra gain margin allowed for checking TSI
+        Gmargin:  extra gain margin allowed for checking TSI
         restart:  restart the algorithm when overshooting (True or False)
         verbose:  display computational progress (True or False)
         verbskip: number of iterations to skip between displays
-        stop_eps: stop if D_h(z[k],z[k-1]) < stop_eps
 
     Returns (x, Fx, Ls):
         x:  the last iterate of BPG
-        Fx: array storing F(x[k]) for all k
+        F:  array storing F(x[k]) for all k
         Gamma: gamma_k obtained at each iteration
-        Gdiv:  triangle scaling gains D(xk,yk)/D(zk,zk_1)/theta_k^gamma_k
+        G:  triangle scaling gains D(xk,yk)/D(zk,zk_1)/theta_k^gamma_k
+        T:  array storing time used up to iteration k
     """
     
     if verbose:
@@ -256,8 +211,8 @@ def ABPG_expo(f, h, L, gamma0, x0, maxitrs, delta=0.2, theta_eq=True,
               "        TSG       D(x+,y)     D(z+,z)     time")
     
     start_time = time.time()
-    Fx = np.zeros(maxitrs)
-    Gdiv = np.zeros(maxitrs)
+    F = np.zeros(maxitrs)
+    G = np.zeros(maxitrs)
     Gamma = np.ones(maxitrs) * gamma0
     T = np.zeros(maxitrs)
     
@@ -269,7 +224,7 @@ def ABPG_expo(f, h, L, gamma0, x0, maxitrs, delta=0.2, theta_eq=True,
     for k in range(maxitrs):
         # function value at previous iteration
         fx = f(x)   
-        Fx[k] = fx + h.extra_Psi(x)
+        F[k] = fx + h.extra_Psi(x)
         T[k] = time.time() - start_time
         
         # Update three iterates x, y and z
@@ -295,7 +250,7 @@ def ABPG_expo(f, h, L, gamma0, x0, maxitrs, delta=0.2, theta_eq=True,
             Gdr = dxy / dzz / theta**gamma
 
             if checkdiv:
-                condition = (dxy > gainmargin * (theta**gamma) * dzz )
+                condition = (dxy > Gmargin * (theta**gamma) * dzz )
             else:
                 condition = (f(x) > fy + np.dot(g, x-y) + theta**gamma*L*dzz)
                 
@@ -305,11 +260,11 @@ def ABPG_expo(f, h, L, gamma0, x0, maxitrs, delta=0.2, theta_eq=True,
                 condition = False
                
         # store and display computational progress
-        Gdiv[k] = Gdr
+        G[k] = Gdr
         Gamma[k] = gamma
         if verbose and k % verbskip == 0:
             print("{0:6d}  {1:10.3e}  {2:10.3e}  {3:10.3e}  {4:10.3e}  {5:10.3e}  {6:10.3e}  {7:6.1f}".format(
-                    k, Fx[k], theta, gamma, Gdr, dxy, dzz, T[k]))
+                    k, F[k], theta, gamma, Gdr, dxy, dzz, T[k]))
 
         # restart if gradient predicts objective increase
         kk += 1
@@ -321,45 +276,45 @@ def ABPG_expo(f, h, L, gamma0, x0, maxitrs, delta=0.2, theta_eq=True,
                 z = x           # in either case, reset z = x and also y
 
         # stopping criteria
-        if dzz < stop_eps:
+        if dzz < epsilon:
             break;
 
-    Fx = Fx[0:k+1]
+    F = F[0:k+1]
     Gamma = Gamma[0:k+1]
-    Gdiv = Gdiv[0:k+1]
+    G = G[0:k+1]
     T = T[0:k+1]
-    return x, Fx, Gamma, Gdiv, T
+    return x, F, Gamma, G, T
 
 
-def ABPG_gain(f, h, L, gamma, x0, maxitrs, G0=1, 
-              ls_increment=1.2, ls_decrement=1.2, ls_adapt=True, 
-              theta_eq=True, checkdiv=False, restart=False, 
-              verbose=True, verbskip=1, stop_eps=1e-14):
+def ABPG_gain(f, h, L, x0, gamma, maxitrs, epsilon=1e-14, G0=1, 
+              ls_inc=1.2, ls_dec=1.2, theta_eq=True, checkdiv=False, 
+              restart=False, verbose=True, verbskip=1):
     """
     Accelerated Bregman Proximal Gradient (ABPG) method with gain adaption for 
             minimize_{x in C} f(x) + Psi(x): 
     
     Inputs:
-        f, h, L:  f is L-smooth relative to h, and Psi is defined with h
-        gamma:    triangle scaling exponent(TSE) for Bregman distance D_h(x,y)
+        f, h, L:  f is L-smooth relative to h, and Psi is defined within h
         x0:       initial point to start algorithm
+        gamma:    triangle scaling exponent(TSE) for Bregman distance D_h(x,y)
         G0:       initial value for triangle scaling gain
         maxitrs:  maximum number of iterations
-        ls_increment: factor of increasing gain (>=1)
-        ls_decrement: factor of decreasing gain (>=1)
-        ls_adapt: whether or not automatically decreasing gain (True or False)
+        epsilon:  stop if D_h(z[k],z[k-1]) < epsilon
+        ls_inc:   factor of increasing gain (>=1)
+        ls_dec:   factor of decreasing gain (>=1)
         theta_eq: calculate theta_k by solving equality using Newton's method
         checkdiv: check triangle scaling inequality for adaption (True/False)
         restart:  restart the algorithm when overshooting (True/False)
         verbose:  display computational progress (True/False)
         verbskip: number of iterations to skip between displays
-        stop_eps: stop if D_h(z[k],z[k-1]) < stop_eps
 
     Returns (x, Fx, Ls):
         x:  the last iterate of BPG
-        Fx: array storing F(x[k]) for all k
+        F:  array storing F(x[k]) for all k
         Gain: triangle scaling gains G_k obtained by LS at each iteration
         Gdiv: triangle scaling gains D(xk,yk)/D(zk,zk_1)/theta_k^gamma_k
+        Gavg: geometric mean of G_k at all steps up to iteration k
+        T:  array storing time used up to iteration k
     """
     if verbose:
         print("\nABPG_gain method for min_{x in C} F(x) = f(x) + Psi(x)")
@@ -367,7 +322,7 @@ def ABPG_gain(f, h, L, gamma, x0, maxitrs, G0=1,
               "         TSG       D(x+,y)     D(z+,z)      Gavg       time")
 
     start_time = time.time()    
-    Fx = np.zeros(maxitrs)
+    F = np.zeros(maxitrs)
     Gain = np.ones(maxitrs) * G0
     Gdiv = np.zeros(maxitrs)
     Gavg = np.zeros(maxitrs)
@@ -383,7 +338,7 @@ def ABPG_gain(f, h, L, gamma, x0, maxitrs, G0=1,
     for k in range(maxitrs):
         # function value at previous iteration
         fx = f(x)   
-        Fx[k] = fx + h.extra_Psi(x)
+        F[k] = fx + h.extra_Psi(x)
         T[k] = time.time() - start_time
         
         # Update three iterates x, y and z
@@ -393,8 +348,7 @@ def ABPG_gain(f, h, L, gamma, x0, maxitrs, G0=1,
         G_1 = G
         theta_1 = theta
         
-        if ls_adapt:
-            G = G / ls_decrement
+        G = G / ls_dec
         
         condition = True
         while condition:
@@ -415,7 +369,7 @@ def ABPG_gain(f, h, L, gamma, x0, maxitrs, G0=1,
             # compute triangle scaling quantities
             dxy = h.divergence(x, y)
             dzz = h.divergence(z, z_1)
-            if dzz < stop_eps:
+            if dzz < epsilon:
                 break
             
             Gdr = dxy / dzz / theta**gamma
@@ -426,7 +380,7 @@ def ABPG_gain(f, h, L, gamma, x0, maxitrs, G0=1,
                 condition = (f(x) > fy + np.dot(g,x-y) + theta**gamma*G*L*dzz)
                 
             if condition:
-                G = G * ls_increment
+                G = G * ls_inc
                
         # store and display computational progress
         Gain[k] = G
@@ -435,49 +389,50 @@ def ABPG_gain(f, h, L, gamma, x0, maxitrs, G0=1,
         Gavg[k] = np.exp(sumlogG / (gamma + k)) 
         if verbose and k % verbskip == 0:
             print("{0:6d}  {1:10.3e}  {2:10.3e}  {3:10.3e}  {4:10.3e}  {5:10.3e}  {6:10.3e}  {7:10.3e}  {8:6.1f}".format(
-                    k, Fx[k], theta, G, Gdr, dxy, dzz, Gavg[k], T[k]))
+                    k, F[k], theta, G, Gdr, dxy, dzz, Gavg[k], T[k]))
 
         # restart if gradient predicts objective increase
         kk += 1
         if restart:
-            if k > 0 and Fx[k] > Fx[k-1]:
-            #if np.dot(g, x-x_1) > 0:
+            #if k > 0 and F[k] > F[k-1]:
+            if np.dot(g, x-x_1) > 0:
                 theta = 1.0     # reset theta = 1 for updating with equality
                 kk = 0          # reset kk = 0 for theta = gamma/(kk+gamma)
                 z = x           # in either case, reset z = x and also y
 
         # stopping criteria
-        if dzz < stop_eps:
+        if dzz < epsilon:
             break;
 
-    Fx = Fx[0:k+1]
+    F = F[0:k+1]
     Gain = Gain[0:k+1]
     Gdiv = Gdiv[0:k+1]
     Gavg = Gavg[0:k+1]
     T = T[0:k+1]
-    return x, Fx, Gain, Gdiv, Gavg, T
+    return x, F, Gain, Gdiv, Gavg, T
 
 
-def ABDA(f, h, L, gamma, x0, maxitrs, theta_eq=True,
-           verbose=True, verbskip=1, stop_eps=1e-14):
+def ABDA(f, h, L, x0, gamma, maxitrs, epsilon=1e-14, theta_eq=True,
+           verbose=True, verbskip=1):
     """
     Accelerated Bregman Dual Averaging (ABDA) method for solving
             minimize_{x in C} f(x) + Psi(x) 
     
     Inputs:
-        f, h, L:  f is L-smooth relative to h, and Psi is defined with h
-        gamma:    triangle scaling exponent (TSE) for Bregman distance D_h(x,y)
+        f, h, L:  f is L-smooth relative to h, and Psi is defined within h
         x0:       initial point to start algorithm
+        gamma:    triangle scaling exponent (TSE) for Bregman distance D_h(x,y)
         maxitrs:  maximum number of iterations
+        epsilon:  stop if D_h(z[k],z[k-1]) < epsilon
         theta_eq: calculate theta_k by solving equality using Newton's method
         verbose:  display computational progress (True or False)
         verbskip: number of iterations to skip between displays
-        stop_eps: stop if D_h(z[k],z[k-1]) < stop_eps
 
     Returns (x, Fx, Ls):
-        x:  the last iterate of BPG
-        Fx: array storing F(x[k]) for all k
-        Gdiv: triangle scaling gains D(xk,yk)/D(zk,zk_1)/theta_k^gamma
+        x: the last iterate of BPG
+        F: array storing F(x[k]) for all k
+        G: triangle scaling gains D(xk,yk)/D(zk,zk_1)/theta_k^gamma
+        T: array storing time used up to iteration k
     """
     # Simple restart schemes for dual averaging method do not work!
     restart = False
@@ -488,8 +443,8 @@ def ABDA(f, h, L, gamma, x0, maxitrs, theta_eq=True,
               "        TSG       D(x+,y)     D(z+,z)     time")
     
     start_time = time.time()
-    Fx = np.zeros(maxitrs)
-    Gdiv = np.zeros(maxitrs)
+    F = np.zeros(maxitrs)
+    G = np.zeros(maxitrs)
     T = np.zeros(maxitrs)
     
     x = np.copy(x0)
@@ -501,7 +456,7 @@ def ABDA(f, h, L, gamma, x0, maxitrs, theta_eq=True,
     for k in range(maxitrs):
         # function value at previous iteration
         fx = f(x)   
-        Fx[k] = fx + h.extra_Psi(x)
+        F[k] = fx + h.extra_Psi(x)
         T[k] = time.time() - start_time
         
         # Update three iterates x, y and z
@@ -525,15 +480,15 @@ def ABDA(f, h, L, gamma, x0, maxitrs, theta_eq=True,
         Gdr = dxy / dzz / theta**gamma
 
         # store and display computational progress
-        Gdiv[k] = Gdr
+        G[k] = Gdr
         if verbose and k % verbskip == 0:
             print("{0:6d}  {1:10.3e}  {2:10.3e}  {3:10.3e}  {4:10.3e}  {5:10.3e}  {6:6.1f}".format(
-                    k, Fx[k], theta, Gdr, dxy, dzz, T[k]))
+                    k, F[k], theta, Gdr, dxy, dzz, T[k]))
 
         kk += 1
         # restart does not work for ABDA (restart = False)
         if restart:
-            if k > 0 and Fx[k] > Fx[k-1]:
+            if k > 0 and F[k] > F[k-1]:
             #if np.dot(g, x-x_1) > 0:   # this does not work for dual averaging
                 theta = 1.0     # reset theta = 1 for updating with equality
                 kk = 0          # reset kk = 0 for theta = gamma/(kk+gamma)
@@ -542,10 +497,10 @@ def ABDA(f, h, L, gamma, x0, maxitrs, theta_eq=True,
                 csum = 0
 
         # stopping criteria
-        if dzz < stop_eps:
+        if dzz < epsilon:
             break;
 
-    Fx = Fx[0:k+1]
-    Gdiv = Gdiv[0:k+1]
+    F = F[0:k+1]
+    G = G[0:k+1]
     T = T[0:k+1]
-    return x, Fx, Gdiv, T
+    return x, F, G, T

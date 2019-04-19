@@ -63,8 +63,8 @@ def D_opt_KYinit(V):
         
     x0 = np.zeros(n)
     x0[I] = np.ones(len(I)) / len(I)
-    x0 /= x0.sum()  # in case there are repeated entries in I, scale to sum 1
-
+    # in case there are repeated entries in I, scale to sum 1
+    x0 /= x0.sum()  
     return x0
         
 

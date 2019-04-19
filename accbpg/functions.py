@@ -24,7 +24,7 @@ class RSmoothFunction:
 
 class DOptimalObj(RSmoothFunction):
     """
-    f(x) = - log(det(H*diag(x)*H')) where H is an m by n matrix, n > m
+    f(x) = - log(det(H*diag(x)*H')) where H is an m by n matrix, m < n
     """
     def __init__(self, H):
         self.H = H
@@ -38,7 +38,26 @@ class DOptimalObj(RSmoothFunction):
     def gradient(self, x):
         return self.func_grad(x, flag=1)
         
-    def func_grad_solve(self, x, flag=2):
+    def func_grad(self, x, flag=2):
+        assert x.size == self.n, "DOptimalObj: x.size not equal to n"
+        assert x.min() >= 0,     "DOptimalObj: x needs to be nonnegative"
+        HXHT = np.dot(self.H*x, self.H.T)
+        
+        if flag == 0:       # only return function value
+            f = -np.log(np.linalg.det(HXHT))
+            return f
+        
+        HXHTinvH = np.dot(np.linalg.inv(HXHT), self.H)
+        g = - np.sum(self.H * HXHTinvH, axis=0)
+
+        if flag == 1:       # only return gradient
+            return g
+        
+        # return both function value and gradient
+        f = -np.log(np.linalg.det(HXHT))
+        return f, g
+
+    def func_grad_slow(self, x, flag=2):
         assert x.size == self.n, "DOptimalObj: x.size not equal to n"
         assert x.min() >= 0,     "DOptimalObj: x needs to be nonnegative"
         sx = np.sqrt(x)
@@ -54,27 +73,6 @@ class DOptimalObj(RSmoothFunction):
         for i in range(self.n):
             g[i] = - np.dot(self.H[:,i], Hsx[:,i])
             
-        if flag == 1:       # only return gradient
-            return g
-        
-        # return both function value and gradient
-        f = -np.log(np.linalg.det(HXHT))
-        return f, g
-
-    def func_grad(self, x, flag=2):
-        assert x.size == self.n, "DOptimalObj: x.size not equal to n"
-        assert x.min() >= 0,     "DOptimalObj: x needs to be nonnegative"
-        HX = self.H*x;    # using numpy array broadcast
-        HXHT = np.dot(self.H,HX.T)
-        #HXHT = np.dot(self.H*x, self.H.T)
-        
-        if flag == 0:       # only return function value
-            f = -np.log(np.linalg.det(HXHT))
-            return f
-        
-        HXHTinvH = np.dot(np.linalg.inv(HXHT), self.H)
-        g = - np.sum(self.H * HXHTinvH, axis=0)
-
         if flag == 1:       # only return gradient
             return g
         
@@ -109,7 +107,7 @@ class PoissonRegression(RSmoothFunction):
 
         # use array broadcasting
         g = ((1-self.b/Ax).reshape(self.m, 1) * self.A).sum(axis=0)
-        # same as the following code
+        # line above is the same as the following code
         #g = np.zeros(x.shape)
         #for i in range(self.m):
         #    g += (1 - self.b[i]/np.dot(self.A[i,:], x)) * self.A[i,:]
@@ -147,7 +145,7 @@ class KLdivRegression(RSmoothFunction):
 
         # use array broadcasting
         g = (np.log(Ax/self.b).reshape(self.m, 1) * self.A).sum(axis=0)
-        # same as the following code
+        # line above is the same as the following code
         #g = np.zeros(x.shape)
         #for i in range(self.m):
         #    g += np.log(Ax[i]/self.b[i]) * self.A[i,:]
@@ -164,8 +162,11 @@ class KLdivRegression(RSmoothFunction):
 
 class LegendreFunction:
     """
-    Function of Legendre type, used as the kernel of Bregman divergence.
-    Include an extra Psi(x) for convenience of composite optimization.
+    Function of Legendre type, used as the kernel of Bregman divergence for
+    composite optimization 
+         minimize_{x in C} f(x) + Psi(x) 
+    where f is L-smooth relative to a Legendre function h(x),
+          Psi(x) is an additional simple convex function.
     """
     def __call__(self, x):
         assert 0, "LegendreFunction: __call__(x) is not defined."
@@ -191,8 +192,11 @@ class LegendreFunction:
     def div_prox_map(self, y, g, L):
         """
         Return argmin_{x in C} { Psi(x) + <g, x> + L * D(x,y)  } 
+        default implementation by calling prox_map(g - L*g(y), L)
         """
-        assert 0, "LegendreFunction: div_prox_map(y, g, L) is not defined."
+        assert y.shape == g.shape, "Vectors y and g should have same size." 
+        assert L > 0, "Relative smoothness constant L should be positive."
+        return self.prox_map(g - L*self.gradient(y), L)
 
 
 class BurgEntropy(LegendreFunction):
@@ -228,8 +232,7 @@ class BurgEntropy(LegendreFunction):
         """
         assert y.shape == g.shape, "Vectors y and g are of different sizes." 
         assert y.min() > 0 and L > 0, "Either y or L is not positive."
-        gg = g/L - self.gradient(y)
-        return self.prox_map(gg, 1)
+        return self.prox_map(g - L*self.gradient(y), L)
 
 
 class BurgEntropyL1(BurgEntropy):
@@ -276,7 +279,7 @@ class BurgEntropyL2(BurgEntropy):
 
     def prox_map(self, g, L):
         """
-        Return argmin_{x > 0} { (lamda/2) * ||x||_2^2 + <g, x> + L h(x) }
+        Return argmin_{x > 0} { (lamda/2) * ||x||_2^2 + <g, x> + L * h(x) }
         """
         assert L > 0, "BurgEntropyL2: prox_map only takes positive L value."
         gg = g / L
@@ -507,9 +510,5 @@ class L2L1Linf(LegendreFunction):
         Return argmin_{x in C} { Psi(x) + <g, x> + L * D(x,y)  } 
         """
         assert y.shape == g.shape and L > 0, "Vectors y and g not same shape."
-        #return self.prox_map(g - L*y, L)
-
-        x = self.prox_map(g - L*y, L)
-        x[-1] = y[-1]
-        return x
+        return self.prox_map(g - L*y, L)
         
