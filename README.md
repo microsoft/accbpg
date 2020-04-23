@@ -34,25 +34,25 @@ Clone or fork from GitHub. Or install from PyPI:
 Example: generate a random instance of D-optimal design problem and solve it using two different methods.
 
 ```python
-    import accbpg
+import accbpg
 
-    # generate a random instance of D-optimal design problem of size 80 by 200
-    f, h, L, x0 = accbpg.D_opt_design(80, 200)
+# generate a random instance of D-optimal design problem of size 80 by 200
+f, h, L, x0 = accbpg.D_opt_design(80, 200)
 
-    # solve the problem instance using BPG with line search
-    x1, F1, G1, T1 = accbpg.BPG(f, h, L, x0, maxitrs=1000, verbskip=100)
+# solve the problem instance using BPG with line search
+x1, F1, G1, T1 = accbpg.BPG(f, h, L, x0, maxitrs=1000, verbskip=100)
 
-    # solve it again using ABPG with gamma=2
-    x2, F2, G2, T2 = accbpg.ABPG(f, h, L, x0, gamma=2, maxitrs=1000, verbskip=100)
+# solve it again using ABPG with gamma=2
+x2, F2, G2, T2 = accbpg.ABPG(f, h, L, x0, gamma=2, maxitrs=1000, verbskip=100)
 
-    # solve it again using adaptive variant of ABPG with gamma=2
-    x3, F3, G3, _, _, T3 = accbpg.ABPG_gain(f, h, L, x0, gamma=2, maxitrs=1000, verbskip=100)
+# solve it again using adaptive variant of ABPG with gamma=2
+x3, F3, G3, _, _, T3 = accbpg.ABPG_gain(f, h, L, x0, gamma=2, maxitrs=1000, verbskip=100)
 '''
 
 D-optimal experiment design problems can be constructed from files (LIBSVM format) directly using
 
 ```python
-    f, h, L, X0 = accbpg.D_opt_libsvm(filename)
+f, h, L, X0 = accbpg.D_opt_libsvm(filename)
 ```
 
 All algorithms can work with customized functions f(x) and h(x), and an example is given in [this Python file](accbpg/ex_LR_L2L1Linf.py).
