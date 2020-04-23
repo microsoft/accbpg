@@ -47,7 +47,7 @@ x2, F2, G2, T2 = accbpg.ABPG(f, h, L, x0, gamma=2, maxitrs=1000, verbskip=100)
 
 # solve it again using adaptive variant of ABPG with gamma=2
 x3, F3, G3, _, _, T3 = accbpg.ABPG_gain(f, h, L, x0, gamma=2, maxitrs=1000, verbskip=100)
-'''
+```
 
 D-optimal experiment design problems can be constructed from files (LIBSVM format) directly using
 
