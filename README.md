@@ -12,7 +12,7 @@ with a reference function h(x), where C is a closed convex set and
 
 ### Implemented algorithms in [HRX2018](https://arxiv.org/abs/1808.03045)
 
-* BPG_LS (Bregman proximal gradient) method with line search
+* BPG(Bregman proximal gradient) method with line search option
 * ABPG (Accelerated BPG) method
 * ABPG-expo (ABPG with exponent adaption)
 * ABPG-gain (ABPG with gain adaption)
@@ -34,29 +34,18 @@ Example: generate a random instance of D-optimal design problem and solve it usi
     f, h, L, x0 = accbpg.D_opt_design(80, 200)
 
     # solve the problem instance using BPG with line search
-    x1, F1, G1 = accbpg.BPG_LS(f, h, L, x0, maxitrs=1000, verbskip=100)
+    x1, F1, G1, T1 = accbpg.BPG(f, h, L, x0, maxitrs=1000, verbskip=100)
 
-    # solve it again using ABPG_gain with gamma=2
-    x2, F2, G2, D2 = accbpg.ABPG_gain(f, h, L, 2, x0, maxitrs=1000, verbskip=100)
+    # solve it again using ABPG with gamma=2
+    x2, F2, G2, T2 = accbpg.ABPG(f, h, L, x0, gamma=2, maxitrs=1000, verbskip=100)
 
-Then compare these two methods by visualization
+    # solve it again using adaptive variant of ABPG  with gamma=2
+    x3, F3, G3, _, _, T3 = accbpg.ABPG_gain(f, h, L, x0, gamma=2, maxitrs=1000, verbskip=100)
 
-    import matplotlib.pyplot as plt
-    Fmin = min(F1.min(), F2.min())
-    plt.semilogy(range(len(F1)), F1-Fmin, range(len(F2)), F2-Fmin)
+A complete example is given in this [Jupyter Notebook](ipynb/ex_Dopt_random.ipynb)
 
-## Examples in [HRX2018](https://arxiv.org/abs/1808.03045)
+### Additional examples
 
-**D-optimal experiment design**
-    
-    import accbpg.ex_D_opt
+* All examples in [HRX2018](https://arxiv.org/abs/1808.03045) can be found in the [ipynb](ipynb/) directory.
 
-**Nonnegative regression with KL-divergence**
-
-    import accbpg.ex_KL_regr
-
-**Poisson linear inverse problems**
-
-    import accbpg.ex_PoissonL1
-    import accbpg.ex_PoissonL2
-
+* Comparisons with the Frank-Wolfe method can be found in [ipynb/ABPGvsFW](ipynb/ABPGvsFW/)
