@@ -18,6 +18,11 @@ with a reference function h(x), where C is a closed convex set and
 * ABPG-gain (ABPG with gain adaption)
 * ABDA (Accelerated Bregman dual averaging) method
 
+Additional algorithms for solving D-Optimal Experiment Design problems:
+
+* D_opt_FW (basic Frank-Wolfe method)
+* D_opt_FW_away (Frank-Wolfe method with away steps)
+
 ## Install
 
 Clone or fork from GitHub. Or install from PyPI:
@@ -39,7 +44,7 @@ Example: generate a random instance of D-optimal design problem and solve it usi
     # solve it again using ABPG with gamma=2
     x2, F2, G2, T2 = accbpg.ABPG(f, h, L, x0, gamma=2, maxitrs=1000, verbskip=100)
 
-    # solve it again using adaptive variant of ABPG  with gamma=2
+    # solve it again using adaptive variant of ABPG with gamma=2
     x3, F3, G3, _, _, T3 = accbpg.ABPG_gain(f, h, L, x0, gamma=2, maxitrs=1000, verbskip=100)
 
 A complete example is given in this [Jupyter Notebook](ipynb/ex_Dopt_random.ipynb)
