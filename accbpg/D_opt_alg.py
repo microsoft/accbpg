@@ -88,7 +88,7 @@ def D_opt_FW(V, x0, eps, maxitrs, verbose=True, verbskip=1):
     return x, F, SP, SN, T
 
 
-def D_opt_WATY(V, x0, eps, maxitrs, verbose=True, verbskip=1):
+def D_opt_FW_away(V, x0, eps, maxitrs, verbose=True, verbskip=1):
     """
     Solve the D-optimal design problem by Frank-Wolfe (Wolfe-Atwood) algorithm
         minimize     - log(det(V*diag(x)*V'))
@@ -145,6 +145,7 @@ def D_opt_WATY(V, x0, eps, maxitrs, verbose=True, verbskip=1):
         i = np.argmax(w)
         ww = w - w[i]   # shift the array so that ww.max() = 0
         j = np.argmin(ww * [x > 1.0e-8])
+        #j = np.argmin(ww * [x > 0])
 
         eps_pos = w[i] / m - 1
         eps_neg = 1 - w[j] / m

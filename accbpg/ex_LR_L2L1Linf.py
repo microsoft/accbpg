@@ -13,8 +13,8 @@ The objective f is 1-relative smooth relative to (1/2)||x||_2^2.
 """
 
 import numpy as np
-from functions import RSmoothFunction, L2L1Linf,SquaredL2Norm
-from algorithms import BPG_LS, ABPG_gain
+from functions import RSmoothFunction, L2L1Linf, SquaredL2Norm
+from algorithms import BPG, ABPG_gain
 
 class LogisticRegression(RSmoothFunction):
     """
@@ -70,13 +70,10 @@ def test_L2L1Linf():
     x0 = np.zeros(n)
     maxitrs = 100
 
-    (x1, F1, G1) = BPG_LS(f, h, L, x0, maxitrs, verbskip=10)
+    x1, F1, G1, _ = BPG(f, h, L, x0, maxitrs, verbskip=10)
     
-    (x2, F2, G2, G22) = ABPG_gain(f, h, L, 2, x0, maxitrs, ls_adapt=True,
+    x2, F2, G2, _, _, _ = ABPG_gain(f, h, L, x0, gamma=2, maxitrs=maxitrs,
                                  restart=False, verbskip=10)
-    print(x1)
-    print(x2)
-    
     
 if __name__ == "__main__":
     test_L2L1Linf()    

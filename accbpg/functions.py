@@ -457,6 +457,26 @@ class SquaredL2Norm(LegendreFunction):
         return y - (1/L)*g
 
 
+class PowerNeg1(LegendreFunction):
+    """
+    h(x) = 1/x  for x>0
+    """       
+    def __call__(self, x):
+        return 1/x
+
+    def gradient(self, x):         
+        return -1/(x*x)
+
+    def divergence(self, x, y):
+        assert x.shape == y.shape, "SquaredL2Norm: x and y not same shape."
+        xy = x - y
+        return np.sum(xy*xy/(x*y*y))
+
+    def prox_map(self, g, L):
+        assert L > 0, "SquaredL2Norm: L should be positive."
+        return np.sqrt(L/g)
+        
+
 class L2L1Linf(LegendreFunction):
     """
     usng h(x) = (1/2)||x||_2^2 in solving problems of the form

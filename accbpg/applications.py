@@ -4,7 +4,27 @@
 
 import numpy as np
 from .functions import *
+from .utils import load_libsvm_file
 
+
+def D_opt_libsvm(filename):
+    """
+    Generate a D-Optimal Design problem from LIBSVM datasets
+    """
+    X, y = load_libsvm_file(filename)
+    if X.shape[0] > X.shape[1]:
+        H = X.T.toarray('C')
+    else:
+        H = X.toarray('C')
+    n = H.shape[1]
+     
+    f = DOptimalObj(H)
+    h = BurgEntropySimplex()
+    L = 1.0
+    x0 = (1.0/n)*np.ones(n)
+    
+    return f, h, L, x0
+   
 
 def D_opt_design(m, n, randseed=-1):
     """

@@ -3,11 +3,13 @@
 
 
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
+from matplotlib.pyplot import *
 
 
-def plot_comparisons(axis, y_vals, labels, x_vals=[], plotdiff=False, axlog="", 
-                 xlim=[], ylim=[], xlabel="", ylabel="", legendloc= "",
+def plot_comparisons(axis, y_vals, labels, x_vals=[], plotdiff=False, 
+                 yscale="linear", xscale="linear", 
+                 xlim=[], ylim=[], xlabel="", ylabel="", legendloc=0,
                  linestyles=['k:', 'g-', 'b-.', 'k-', 'r--', 'k-', 'm-'],
                  linedash=[[1,2], [], [4,2,1,2], [], [4,2], [], [], []]):
     """
@@ -20,29 +22,25 @@ def plot_comparisons(axis, y_vals, labels, x_vals=[], plotdiff=False, axlog="",
         for i in range(len(y_vals)):
             y_shift = min(y_shift, y_vals[i].min())     
 
-    if axlog == "y":
-        plotcommand = axis.semilogy
-    elif axlog == "xy":
-        plotcommand = axis.loglog      
-    else:
-        plotcommand = axis.plot
-            
     for i in range(len(y_vals)):
         if len(x_vals) > 0:
             xi = x_vals[i]
         else:
             xi = np.arange(len(y_vals[i])) + 1
             
-        plotcommand(xi, y_vals[i]-y_shift, linestyles[i], label=labels[i]) 
-                    #dashes=linedash[i], label=labels[i])
+        axis.plot(xi, y_vals[i]-y_shift, linestyles[i], label=labels[i], 
+                  dashes=linedash[i])
     
-    if len(legendloc) > 0:
-        axis.legend(loc=legendloc)
-    else:
-        axis.legend()
-        
+    axis.set_xscale(xscale)
+    axis.set_yscale(yscale)
     axis.set_xlabel(xlabel)
     axis.set_ylabel(ylabel)
+    if legendloc == "no":
+        pass
+    elif legendloc == "outside":
+        axis.legend(bbox_to_anchor=(1.05, 1), loc="upper left", borderaxespad=0)
+    else: 
+        axis.legend(loc=legendloc)
  
     if len(xlim) > 0:
         axis.set_xlim(xlim)

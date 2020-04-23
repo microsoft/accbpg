@@ -6,7 +6,7 @@ import numpy as np
 import time
 
 
-def BPG(f, h, L, x0, maxitrs, epsilon=1e-16, linesearch=True, ls_ratio=2,
+def BPG(f, h, L, x0, maxitrs, epsilon=1e-14, linesearch=True, ls_ratio=1.2,
         verbose=True, verbskip=1):
     """
     Bregman Proximal Gradient (BGP) method for min_{x in C} f(x) + Psi(x): 
@@ -90,7 +90,7 @@ def solve_theta(theta, gamma, gainratio=1):
       
 
 def ABPG(f, h, L, x0, gamma, maxitrs, epsilon=1e-14, theta_eq=False, 
-         restart=False, verbose=True, verbskip=1):
+         restart=False, restart_rule='g', verbose=True, verbskip=1):
     """
     Accelerated Bregman Proximal Gradient (ABPG) method for solving 
             minimize_{x in C} f(x) + Psi(x): 
@@ -103,6 +103,7 @@ def ABPG(f, h, L, x0, gamma, maxitrs, epsilon=1e-14, theta_eq=False,
         epsilon:  stop if D_h(z[k],z[k-1]) < epsilon
         theta_eq: calculate theta_k by solving equality using Newton's method
         restart:  restart the algorithm when overshooting (True or False)
+        restart_rule: 'f' for function increasing or 'g' for gradient angle
         verbose:  display computational progress (True or False)
         verbskip: number of iterations to skip between displays
 
@@ -159,9 +160,10 @@ def ABPG(f, h, L, x0, gamma, maxitrs, epsilon=1e-14, theta_eq=False,
 
         # restart if gradient predicts objective increase
         kk += 1
-        if restart:
-            #if k > 0 and Fx[k] > Fx[k-1]:
-            if np.dot(g, x-x_1) > 0:
+        if restart and k > 0:
+            #if k > 0 and F[k] > F[k-1]:
+            #if np.dot(g, x-x_1) > 0:
+            if (restart_rule == 'f' and F[k] > F[k-1]) or (restart_rule == 'g' and np.dot(g, x-x_1) > 0):
                 theta = 1.0     # reset theta = 1 for updating with equality
                 kk = 0          # reset kk = 0 for theta = gamma/(kk+gamma)
                 z = x           # in either case, reset z = x and also y
@@ -177,8 +179,8 @@ def ABPG(f, h, L, x0, gamma, maxitrs, epsilon=1e-14, theta_eq=False,
 
 
 def ABPG_expo(f, h, L, x0, gamma0, maxitrs, epsilon=1e-14, delta=0.2, 
-              theta_eq=True, checkdiv=False, Gmargin=2, restart=False, 
-              verbose=True, verbskip=1):
+              theta_eq=True, checkdiv=False, Gmargin=10, restart=False, 
+              restart_rule='g', verbose=True, verbskip=1):
     """
     Accelerated Bregman Proximal Gradient method with exponent adaption for
             minimize_{x in C} f(x) + Psi(x) 
@@ -194,6 +196,7 @@ def ABPG_expo(f, h, L, x0, gamma0, maxitrs, epsilon=1e-14, delta=0.2,
         checkdiv: check triangle scaling inequality for adaption (True/False)
         Gmargin:  extra gain margin allowed for checking TSI
         restart:  restart the algorithm when overshooting (True or False)
+        restart_rule: 'f' for function increasing or 'g' for gradient angle
         verbose:  display computational progress (True or False)
         verbskip: number of iterations to skip between displays
 
@@ -269,8 +272,9 @@ def ABPG_expo(f, h, L, x0, gamma0, maxitrs, epsilon=1e-14, delta=0.2,
         # restart if gradient predicts objective increase
         kk += 1
         if restart:
-            #if k > 0 and Fx[k] > Fx[k-1]:
-            if np.dot(g, x-x_1) > 0:
+            #if k > 0 and F[k] > F[k-1]:
+            #if np.dot(g, x-x_1) > 0:
+            if (restart_rule == 'f' and F[k] > F[k-1]) or (restart_rule == 'g' and np.dot(g, x-x_1) > 0):
                 theta = 1.0     # reset theta = 1 for updating with equality
                 kk = 0          # reset kk = 0 for theta = gamma/(kk+gamma)
                 z = x           # in either case, reset z = x and also y
@@ -288,7 +292,7 @@ def ABPG_expo(f, h, L, x0, gamma0, maxitrs, epsilon=1e-14, delta=0.2,
 
 def ABPG_gain(f, h, L, x0, gamma, maxitrs, epsilon=1e-14, G0=1, 
               ls_inc=1.2, ls_dec=1.2, theta_eq=True, checkdiv=False, 
-              restart=False, verbose=True, verbskip=1):
+              restart=False, restart_rule='g', verbose=True, verbskip=1):
     """
     Accelerated Bregman Proximal Gradient (ABPG) method with gain adaption for 
             minimize_{x in C} f(x) + Psi(x): 
@@ -305,6 +309,7 @@ def ABPG_gain(f, h, L, x0, gamma, maxitrs, epsilon=1e-14, G0=1,
         theta_eq: calculate theta_k by solving equality using Newton's method
         checkdiv: check triangle scaling inequality for adaption (True/False)
         restart:  restart the algorithm when overshooting (True/False)
+        restart_rule: 'f' for function increasing or 'g' for gradient angle
         verbose:  display computational progress (True/False)
         verbskip: number of iterations to skip between displays
 
@@ -395,7 +400,8 @@ def ABPG_gain(f, h, L, x0, gamma, maxitrs, epsilon=1e-14, G0=1,
         kk += 1
         if restart:
             #if k > 0 and F[k] > F[k-1]:
-            if np.dot(g, x-x_1) > 0:
+            #if np.dot(g, x-x_1) > 0:
+            if (restart_rule == 'f' and F[k] > F[k-1]) or (restart_rule == 'g' and np.dot(g, x-x_1) > 0):
                 theta = 1.0     # reset theta = 1 for updating with equality
                 kk = 0          # reset kk = 0 for theta = gamma/(kk+gamma)
                 z = x           # in either case, reset z = x and also y
