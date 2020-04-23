@@ -33,6 +33,7 @@ Clone or fork from GitHub. Or install from PyPI:
 
 Example: generate a random instance of D-optimal design problem and solve it using two different methods.
 
+```python
     import accbpg
 
     # generate a random instance of D-optimal design problem of size 80 by 200
@@ -46,6 +47,15 @@ Example: generate a random instance of D-optimal design problem and solve it usi
 
     # solve it again using adaptive variant of ABPG with gamma=2
     x3, F3, G3, _, _, T3 = accbpg.ABPG_gain(f, h, L, x0, gamma=2, maxitrs=1000, verbskip=100)
+'''
+
+D-optimal experiment design problems can be constructed from files (LIBSVM format) directly using
+
+```python
+    f, h, L, X0 = accbpg.D_opt_libsvm(filename)
+```
+
+All algorithms can work with customized functions f(x) and h(x), and an example is given in [this Python file](accbpg/ex_LR_L2L1Linf.py).
 
 ### Additional examples
 
@@ -55,5 +65,4 @@ Example: generate a random instance of D-optimal design problem and solve it usi
 
 * Comparisons with the Frank-Wolfe method can be found in [ipynb/ABPGvsFW](ipynb/ABPGvsFW/).
 
-All algorithms can work with customized functions f(x) and h(x), and an example is given in [this Python file](accbpg/ex_LR_L2L1Linf.py).
 
