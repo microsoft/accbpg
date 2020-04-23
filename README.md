@@ -6,11 +6,11 @@ A Python package of accelerated first-order algorithms for solving relatively-sm
 
 with a reference function h(x), where C is a closed convex set and
 
-* h(x) is convex and essentially smooth on C
-* f(x) is convex and differentiable, and L-smooth relative to h(x), that is, f(x)-L*h(x) is convex
-* P(x) is convex and closed (lower semi-continuous)
+* h(x) is convex and essentially smooth on C;
+* f(x) is convex and differentiable, and L-smooth relative to h(x), that is, f(x)-L*h(x) is convex;
+* P(x) is convex and closed (lower semi-continuous).
 
-### Implemented algorithms in [HRX2018](https://arxiv.org/abs/1808.03045)
+### Implemented algorithms in [HRX2018](https://arxiv.org/abs/1808.03045):
 
 * BPG(Bregman proximal gradient) method with line search option
 * ABPG (Accelerated BPG) method
@@ -31,7 +31,7 @@ Clone or fork from GitHub. Or install from PyPI:
 
 ## Usage
 
-Example: generate a random instance of D-optimal design problem and solve it using two different methods
+Example: generate a random instance of D-optimal design problem and solve it using two different methods.
 
     import accbpg
 
@@ -47,10 +47,13 @@ Example: generate a random instance of D-optimal design problem and solve it usi
     # solve it again using adaptive variant of ABPG with gamma=2
     x3, F3, G3, _, _, T3 = accbpg.ABPG_gain(f, h, L, x0, gamma=2, maxitrs=1000, verbskip=100)
 
-A complete example is given in this [Jupyter Notebook](ipynb/ex_Dopt_random.ipynb)
-
 ### Additional examples
+
+* A complete example with visualization is given in this [Jupyter Notebook](ipynb/ex_Dopt_random.ipynb).
 
 * All examples in [HRX2018](https://arxiv.org/abs/1808.03045) can be found in the [ipynb](ipynb/) directory.
 
-* Comparisons with the Frank-Wolfe method can be found in [ipynb/ABPGvsFW](ipynb/ABPGvsFW/)
+* Comparisons with the Frank-Wolfe method can be found in [ipynb/ABPGvsFW](ipynb/ABPGvsFW/).
+
+All algorithms can work with customized functions f(x) and h(x), and an example is given in [this Python file](accbpg/ex_LR_L2L1Linf.py).
+
